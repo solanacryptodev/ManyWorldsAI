@@ -26,6 +26,11 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
   const [messages] = useUIState()
   const [aiState] = useAIState()
 
+  useEffect(() => {
+      console.log('AI state: ', aiState);
+      console.log('User messages: ', messages);
+  }, [aiState, messages])
+
   const [_, setNewChatId] = useLocalStorage('newChatId', id)
 
   useEffect(() => {

@@ -127,7 +127,7 @@ async function submitUserMessage(content: string) {
   let textNode: undefined | React.ReactNode
 
   const result = await streamUI({
-    model: openai('gpt-3.5-turbo'),
+    model: openai('gpt-4o'),
     initial: <SpinnerMessage />,
     system: `\
     You are a stock trading conversation bot and you can help users buy stocks, step by step.
@@ -507,9 +507,11 @@ export const AI = createAI<AIState, UIState>({
 
     if (session && session.user) {
       const aiState = getAIState()
+      console.log('aiState', aiState)
 
       if (aiState) {
         const uiState = getUIStateFromAIState(aiState)
+        console.log('uiState', uiState)
         return uiState
       }
     } else {
