@@ -34,7 +34,7 @@ export const useRecordVoice = () => {
     };
 
     const stopRecording = () => {
-        if (mediaRecorder !== null) {
+        if (mediaRecorder) {
             mediaRecorder.stop();
             setRecording(false);
         }
@@ -58,16 +58,17 @@ export const useRecordVoice = () => {
             const transcription = await transcribeUsersVoice(base64data);
             setText(transcription.userText);
 
+            const newUserMessage = {
+                id: nanoid(),
+                display: <UserMessage>{transcription.userText}</UserMessage>
+            };
+
             setMessages(currentMessages => [
                 ...currentMessages,
-                {
-                    id: nanoid(),
-                    display: <UserMessage>{[transcription.userText]}</UserMessage>
-                }
+                newUserMessage
             ]);
-            const responseMessage = await submitUserMessage(
-                text
-            );
+
+            const responseMessage = await submitUserMessage(transcription.userText);
             setMessages(currentMessages => [
                 ...currentMessages,
                 responseMessage
@@ -77,14 +78,24 @@ export const useRecordVoice = () => {
         setMediaRecorder(mediaRecorder);
     };
 
+
+
     useEffect(() => {
         if (typeof window !== "undefined") {
             navigator.mediaDevices
                 .getUserMedia({ audio: true })
-                .then(initializeMediaRecorder);
+                .then(initializeMediaRecorder)
+                .catch(error => {
+                    console.error('Error accessing microphone:', error);
+                });
+
+            return () => {
+                if (mediaRecorder) {
+                    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                }
+            };
         }
     }, []);
 
     return { recording, toggleRecording, text };
 };
-

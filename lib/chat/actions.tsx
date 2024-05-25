@@ -37,6 +37,7 @@ import { SpinnerMessage, UserMessage } from '@/components/stocks/message'
 import { Chat, Message } from '@/lib/types'
 import { auth } from '@/auth'
 import fs from 'fs'
+import { ElevenLabsClient } from "elevenlabs";
 
 async function confirmPurchase(symbol: string, price: number, amount: number) {
   'use server'
@@ -106,6 +107,34 @@ async function confirmPurchase(symbol: string, price: number, amount: number) {
       display: systemMessage.value
     }
   }
+}
+
+async function submitToElevenLabs(content: string) {
+  'use server'
+
+  const elevenLabs = new ElevenLabsClient({
+    apiKey: process.env.NEXT_PUBLIC_ELEVEN_LABS_KEY,
+  });
+
+  const audio = await elevenLabs.generate({
+    voice: 'Brian',
+    text: content,
+    model_id: 'eleven_multilingual_v2',
+  });
+
+  const base64Audio = await convertToBase64(audio);
+  return {
+    aiVoice: base64Audio,
+  };
+}
+
+async function convertToBase64(readableStream: any) {
+  const chunks = [];
+  for await (const chunk of readableStream) {
+    chunks.push(chunk);
+  }
+  const buffer = Buffer.concat(chunks);
+  return buffer.toString('base64');
 }
 
 async function transcribeUsersVoice(voice: string) {
@@ -529,6 +558,7 @@ export type UIState = {
 export const AI = createAI<AIState, UIState>({
   actions: {
     submitUserMessage,
+    submitToElevenLabs,
     transcribeUsersVoice,
     confirmPurchase,
   },

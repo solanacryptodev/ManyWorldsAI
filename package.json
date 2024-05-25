@@ -32,6 +32,7 @@
     "clsx": "^2.1.0",
     "d3-scale": "^4.0.2",
     "date-fns": "^3.3.1",
+    "elevenlabs": "^0.6.0",
     "focus-trap-react": "^10.2.3",
     "framer-motion": "^10.18.0",
     "geist": "^1.2.1",
