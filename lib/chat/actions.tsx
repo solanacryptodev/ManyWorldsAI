@@ -8,6 +8,7 @@ import {
   streamUI,
   createStreamableValue
 } from 'ai/rsc'
+import OpenAI from "openai";
 import { openai } from '@ai-sdk/openai'
 
 import {
@@ -35,6 +36,7 @@ import { saveChat } from '@/app/actions'
 import { SpinnerMessage, UserMessage } from '@/components/stocks/message'
 import { Chat, Message } from '@/lib/types'
 import { auth } from '@/auth'
+import fs from 'fs'
 
 async function confirmPurchase(symbol: string, price: number, amount: number) {
   'use server'
@@ -106,6 +108,37 @@ async function confirmPurchase(symbol: string, price: number, amount: number) {
   }
 }
 
+async function transcribeUsersVoice(voice: string) {
+  'use server';
+
+  const ai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+  });
+
+  if (!ai) {
+    return;
+  }
+
+  // TODO: find a better solution than using fs
+  const audio = Buffer.from(voice, "base64");
+  const filePath = "tmp/input.wav";
+  fs.writeFileSync(filePath, audio);
+  const readStream = fs.createReadStream(filePath);
+
+  // Transcribe the voice
+  const transcribedVoice = await ai.audio.transcriptions.create({
+    file: readStream,
+    model: 'whisper-1',
+  });
+
+  fs.unlinkSync(filePath);
+
+  return {
+    userText: transcribedVoice.text,
+  };
+}
+
+// send user voice text to LLM
 async function submitUserMessage(content: string) {
   'use server'
 
@@ -496,7 +529,8 @@ export type UIState = {
 export const AI = createAI<AIState, UIState>({
   actions: {
     submitUserMessage,
-    confirmPurchase
+    transcribeUsersVoice,
+    confirmPurchase,
   },
   initialUIState: [],
   initialAIState: { chatId: nanoid(), messages: [] },
@@ -507,11 +541,9 @@ export const AI = createAI<AIState, UIState>({
 
     if (session && session.user) {
       const aiState = getAIState()
-      console.log('aiState', aiState)
 
       if (aiState) {
         const uiState = getUIStateFromAIState(aiState)
-        console.log('uiState', uiState)
         return uiState
       }
     } else {

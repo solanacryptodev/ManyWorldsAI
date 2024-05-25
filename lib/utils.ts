@@ -87,3 +87,47 @@ export const getMessageFromCode = (resultCode: string) => {
       return 'Logged in!'
   }
 }
+
+export const blobToBase64 = (blob: Blob): Promise<string> => {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        const base64data = reader.result.split(",")[1];
+        resolve(base64data);
+      } else {
+        reject(new Error('Reader result is not a string'));
+      }
+    };
+    reader.onerror = (error) => reject(error);
+    reader.readAsDataURL(blob);
+  });
+};
+
+const getPeakLevel = (analyzer: AnalyserNode) => {
+  const array = new Uint8Array(analyzer.fftSize);
+  analyzer.getByteTimeDomainData(array);
+
+  return (
+      array.reduce((max, current) => Math.max(max, Math.abs(current - 127)), 0) /
+      128
+  );
+};
+
+export const createMediaStream = (stream: MediaStream, isRecording: boolean, callback?: (peak: number) => void) => {
+  const context = new AudioContext();
+  const source = context.createMediaStreamSource(stream);
+  const analyzer = context.createAnalyser();
+
+  source.connect(analyzer);
+  const tick = () => {
+    const peak = getPeakLevel(analyzer);
+    if (isRecording) {
+      if (callback && typeof callback === 'function') { // Check if callback is a function
+        callback(peak);
+      }
+      requestAnimationFrame(tick);
+    }
+  };
+  tick();
+};
