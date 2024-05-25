@@ -42,8 +42,8 @@ export function ChatList({ messages, session, isShared }: ChatList) {
       ) : null}
 
       {messages.map((message, index) => (
-        <div key={message.id}>
-          {message.display}
+        <div key={message?.id}>
+          {message?.display}
           {index < messages.length - 1 && <Separator className="my-4" />}
         </div>
       ))}

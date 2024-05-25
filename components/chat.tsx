@@ -23,12 +23,12 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
   const router = useRouter()
   const path = usePathname()
   const [input, setInput] = useState('')
-  const [messages] = useUIState()
+  const [messages, setMessages] = useUIState()
   const [aiState] = useAIState()
 
   useEffect(() => {
-      console.log('AI state: ', aiState);
-      console.log('User messages: ', messages);
+    console.log('AI state: ', aiState);
+    console.log('User messages: ', messages);
   }, [aiState, messages])
 
   const [_, setNewChatId] = useLocalStorage('newChatId', id)
@@ -42,13 +42,6 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
   }, [id, path, session?.user, messages])
 
   useEffect(() => {
-    const messagesLength = aiState.messages?.length
-    if (messagesLength === 2) {
-      router.refresh()
-    }
-  }, [aiState.messages, router])
-
-  useEffect(() => {
     setNewChatId(id)
   })
 
@@ -59,31 +52,32 @@ export function Chat({ id, className, session, missingKeys }: ChatProps) {
   }, [missingKeys])
 
   const { messagesRef, scrollRef, visibilityRef, isAtBottom, scrollToBottom } =
-    useScrollAnchor()
+      useScrollAnchor()
 
   return (
-    <div
-      className="group w-full overflow-auto pl-0 peer-[[data-state=open]]:lg:pl-[250px] peer-[[data-state=open]]:xl:pl-[300px]"
-      ref={scrollRef}
-    >
       <div
-        className={cn('pb-[200px] pt-4 md:pt-10', className)}
-        ref={messagesRef}
+          className="group w-full overflow-auto pl-0 peer-[[data-state=open]]:lg:pl-[250px] peer-[[data-state=open]]:xl:pl-[300px]"
+          ref={scrollRef}
       >
-        {messages.length ? (
-          <ChatList messages={messages} isShared={false} session={session} />
-        ) : (
-          <EmptyScreen />
-        )}
-        <div className="w-full h-px" ref={visibilityRef} />
+        <div
+            className={cn('pb-[200px] pt-4 md:pt-10', className)}
+            ref={messagesRef}
+        >
+          {messages.length > 0 ? (
+              <ChatList messages={messages} isShared={false} session={session} />
+          ) : (
+              <EmptyScreen />
+          )}
+          <div className="w-full h-px" ref={visibilityRef} />
+        </div>
+        <ChatPanel
+            id={id}
+            input={input}
+            setInput={setInput}
+            isAtBottom={isAtBottom}
+            scrollToBottom={scrollToBottom}
+        />
       </div>
-      <ChatPanel
-        id={id}
-        input={input}
-        setInput={setInput}
-        isAtBottom={isAtBottom}
-        scrollToBottom={scrollToBottom}
-      />
-    </div>
   )
 }
+
