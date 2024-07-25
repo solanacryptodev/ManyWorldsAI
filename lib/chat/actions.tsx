@@ -37,6 +37,8 @@ import { SpinnerMessage, UserMessage } from '@/components/stocks/message'
 import { Chat, Message } from '@/lib/types'
 import { auth } from '@/auth'
 import fs from 'fs'
+import CharacterForm from "@/components/character-creation/character-form";
+import CharacterSkeleton from "@/components/character-creation/character-skeleton";
 
 async function confirmPurchase(symbol: string, price: number, amount: number) {
   'use server'
@@ -163,20 +165,24 @@ async function submitUserMessage(content: string) {
     model: openai('gpt-4o'),
     initial: <SpinnerMessage />,
     system: `\
-    You are a stock trading conversation bot and you can help users buy stocks, step by step.
-    You and the user can discuss stock prices and the user can adjust the amount of stocks they want to buy, or place an order, in the UI.
+    You are the game master of a role-playing game called 'The Legend of the Firebirds' where you guide players from Event to Event making it up as you go along.
+    You and the player can discuss the game world of Mauritan Alpha, it's setting, sites of interest, enemies and the player can create a character, 
+    find loot in the world, attack enemies and defend NPCs.
     
     Messages inside [] means that it's a UI element or a user event. For example:
-    - "[Price of AAPL = 100]" means that an interface of the stock price of AAPL is shown to the user.
-    - "[User has changed the amount of AAPL to 10]" means that the user has changed the amount of AAPL to 10 in the UI.
+    - "[Character Sheet = Main]" means that an interface of main player character data is shown to the player.
+    - "[Player has increased in level from 9 to 10]" means that the player has killed enough enemies to go up a level from 9 to 10 and is reflected in the UI.
     
-    If the user requests purchasing a stock, call \`show_stock_purchase_ui\` to show the purchase UI.
-    If the user just wants the price, call \`show_stock_price\` to show the price.
-    If you want to show trending stocks, call \`list_stocks\`.
-    If you want to show events, call \`get_events\`.
-    If the user wants to sell stock, or complete another impossible task, respond that you are a demo and cannot do that.
+    If the player wants to create their character, call \`create_player_character\` to create a character.
+    If the player requests their character sheet, call \`show_player_character\` to show the character sheet UI.
+    If the player just wants their current location, call \`show_current_location\` to show their location.
+    If you or the player want to show nearby enemies, call \`list_enemies\`.
+    If you or the player want to show events, call \`get_events\`.
+    If the player wants to claim loot, call \`get_loot\`.
+    If the player wants to attack an enemy, call \`attack_enemy\`.
+    If the player wants to defend an NPC, call \`defend_enemy\`.
     
-    Besides that, you can also chat with users and do some calculations if needed.`,
+    Besides that, you can also chat with players and do some whatever else is needed to help them progress from event to event.`,
     messages: [
       ...aiState.get().messages.map((message: any) => ({
         role: message.role,
@@ -210,6 +216,74 @@ async function submitUserMessage(content: string) {
       return textNode
     },
     tools: {
+      createPlayerCharacter: {
+        description: 'Create a new player character.',
+        parameters: z.object({
+          characterData: z.array(
+            z.object({
+              name: z.string().describe('The name of the player character'),
+              race: z.string().describe('The race of the player character'),
+              class: z.string().describe('The class of the player character'),
+              attributes: z.object({
+                strength: z.number().describe('The strength of the player character'),
+                dexterity: z.number().describe('The dexterity of the player character'),
+                constitution: z.number().describe('The constitution of the player character'),
+                intelligence: z.number().describe('The intelligence of the player character'),
+                wisdom: z.number().describe('The wisdom of the player character'),
+                charisma: z.number().describe('The charisma of the player character')
+              }).describe('The attributes of the player character')
+            })
+          )
+        }),
+        generate: async function* ({ characterData }) {
+            yield (
+              <BotCard>
+                <CharacterSkeleton />
+              </BotCard>
+            )
+
+          await sleep(1000)
+
+          const toolCallId = nanoid()
+
+          aiState.done({
+            ...aiState.get(),
+            messages: [
+              ...aiState.get().messages,
+              {
+                id: nanoid(),
+                role: 'assistant',
+                content: [
+                  {
+                    type: 'tool-call',
+                    toolName: 'createPlayerCharacter',
+                    toolCallId,
+                    args: { characterData }
+                  }
+                ]
+              },
+              {
+                id: nanoid(),
+                role: 'tool',
+                content: [
+                  {
+                    type: 'tool-result',
+                    toolName: 'createPlayerCharacter',
+                    toolCallId,
+                    result: characterData
+                  }
+                ]
+              }
+            ]
+          })
+
+          return (
+              <BotCard>
+                <CharacterForm characterData={characterData[0]}/>
+              </BotCard>
+          )
+        }
+      },
       listStocks: {
         description: 'List three imaginary stocks that are trending.',
         parameters: z.object({

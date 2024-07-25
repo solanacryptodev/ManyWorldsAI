@@ -39,3 +39,26 @@ export interface User extends Record<string, any> {
   password: string
   salt: string
 }
+
+export interface Character {
+  name: string;
+  race: string;
+  class: string;
+  attributes: {
+    strength: number;
+    dexterity: number;
+    constitution: number;
+    intelligence: number;
+    wisdom: number;
+    charisma: number;
+  };
+}
+
+export const initialAttributes = {
+  strength: 0,
+  dexterity: 0,
+  constitution: 0,
+  intelligence: 0,
+  wisdom: 0,
+  charisma: 0,
+};
